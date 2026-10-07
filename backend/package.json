@@ -1,0 +1,7 @@
+{
+  "name": "laporin-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "seed:reset": "node -e \"require('fs').rmSync('laporin.db',{force:true})\" && node server.js" },
+  "dependencies": { "bcryptjs": "^2.4.3", "cors": "^2.8.5", "express": "^4.19.2", "jsonwebtoken": "^9.0.2" }
+}
