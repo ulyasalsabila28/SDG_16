@@ -89,3 +89,46 @@ class DetailBtn extends StatelessWidget {
         ]),
       );
 }
+
+/// Tombol pilihan tampilan: Daftar (list) atau Grid.
+class ViewToggle extends StatelessWidget {
+  final bool grid;
+  final ValueChanged<bool> onChanged;
+  const ViewToggle({super.key, required this.grid, required this.onChanged});
+
+  Widget _item(IconData icon, bool selected, bool value, String tip) => Tooltip(
+        message: tip,
+        child: GestureDetector(
+          onTap: () => onChanged(value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: 34, height: 30,
+            decoration: BoxDecoration(color: selected ? C.gold : Colors.transparent, borderRadius: BorderRadius.circular(6)),
+            child: Icon(icon, size: 18, color: selected ? Colors.white : C.gold),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), border: Border.all(color: C.gold)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          _item(Icons.view_list_rounded, !grid, false, 'Daftar'),
+          _item(Icons.grid_view_rounded, grid, true, 'Grid'),
+        ]),
+      );
+}
+
+/// Judul seksi + tombol pilihan Daftar/Grid.
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final bool grid;
+  final ValueChanged<bool> onChanged;
+  const SectionHeader(this.title, {super.key, required this.grid, required this.onChanged});
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Expanded(child: Text(title, style: const TextStyle(color: C.gold, fontSize: 11, fontWeight: FontWeight.w700))),
+        ViewToggle(grid: grid, onChanged: onChanged),
+      ]);
+}
