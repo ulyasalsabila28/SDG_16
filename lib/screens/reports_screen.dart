@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/api.dart';
 import '../core/async_view.dart';
+import '../core/responsive.dart';
 import '../core/theme.dart';
 import '../core/widgets.dart';
 import 'create_report_screen.dart';
@@ -13,6 +14,7 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   String filter = '';
+  bool grid = false;
   static const _tabs = [('', 'Semua'), ('belum', 'Belum Diverifikasi'), ('sedang', 'Sedang Diverifikasi'), ('selesai', 'Sudah Ditangani')];
 
   Widget _tab(String v, String t) {
@@ -51,6 +53,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ])),
       );
 
+  Widget _listCard(Map r) => Container(margin: const EdgeInsets.only(bottom: 10), child: Box(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Flexible(child: Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 9), overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8), StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
+          const Spacer(), GestureDetector(onTap: () => _detail(r), child: const DetailBtn('Lihat detail')),
+        ]),
+        const SizedBox(height: 6),
+        Text(r['title'], style: const TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 13)),
+        const SizedBox(height: 6),
+        Row(children: [const Icon(Icons.location_on, size: 11, color: C.gold), Flexible(child: Text(r['location'] ?? '', style: const TextStyle(color: C.grey, fontSize: 9)))]),
+      ])));
+
+  Widget _gridCard(Map r) => GestureDetector(
+        onTap: () => _detail(r),
+        child: Box(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 9), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 6),
+          StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
+          const SizedBox(height: 8),
+          Text(r['title'], maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 12)),
+          const SizedBox(height: 8),
+          Row(children: [const Icon(Icons.location_on, size: 11, color: C.gold), Flexible(child: Text(r['location'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.grey, fontSize: 9)))]),
+          const SizedBox(height: 10),
+          const DetailBtn('Lihat detail'),
+        ])),
+      );
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppHeader('LAPORAN SAYA', actions: [
@@ -67,21 +96,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               const SizedBox(height: 14),
               Row(children: [_count('belum', cn['belum']), const SizedBox(width: 8), _count('sedang', cn['sedang']), const SizedBox(width: 8), _count('selesai', cn['selesai'])]),
               const SizedBox(height: 16),
-              const Text('LAPORAN TERBARU', style: TextStyle(color: C.gold, fontSize: 11, fontWeight: FontWeight.w700)),
+              SectionHeader('LAPORAN TERBARU', grid: grid, onChanged: (v) => setState(() => grid = v)),
               const SizedBox(height: 8),
               if (list.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('Belum ada laporan', style: TextStyle(color: C.grey)))),
-              for (final r in list)
-                Container(margin: const EdgeInsets.only(bottom: 10), child: Box(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Flexible(child: Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 9), overflow: TextOverflow.ellipsis)),
-                    const SizedBox(width: 8), StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
-                    const Spacer(), GestureDetector(onTap: () => _detail(r), child: const DetailBtn('Lihat detail')),
-                  ]),
-                  const SizedBox(height: 6),
-                  Text(r['title'], style: const TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  Row(children: [const Icon(Icons.location_on, size: 11, color: C.gold), Flexible(child: Text(r['location'] ?? '', style: const TextStyle(color: C.grey, fontSize: 9)))]),
-                ]))),
+              if (grid)
+                RGrid(cols: 2, wideCols: 3, gap: 10, children: [for (final r in list) _gridCard(r)])
+              else
+                for (final r in list) _listCard(r),
             ]);
           },
         ),
