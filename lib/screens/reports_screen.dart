@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+
 import '../core/api.dart';
 import '../core/async_view.dart';
 import '../core/responsive.dart';
@@ -8,6 +10,7 @@ import 'create_report_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
+
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
@@ -15,96 +18,466 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   String filter = '';
   bool grid = false;
-  static const _tabs = [('', 'Semua'), ('belum', 'Belum Diverifikasi'), ('sedang', 'Sedang Diverifikasi'), ('selesai', 'Sudah Ditangani')];
 
-  Widget _tab(String v, String t) {
-    final sel = filter == v;
+  static const List<(String, String)> _tabs = [
+    ('', 'Semua'),
+    ('belum', 'Belum Diverifikasi'),
+    ('sedang', 'Sedang Diverifikasi'),
+    ('selesai', 'Sudah Ditangani'),
+  ];
+
+  Widget _tab(String value, String title) {
+    final bool selected = filter == value;
+
     return GestureDetector(
-      onTap: () => setState(() => filter = v),
+      onTap: () {
+        setState(() {
+          filter = value;
+        });
+      },
       child: Container(
-        margin: const EdgeInsets.only(right: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(color: sel ? C.gold : Colors.transparent, borderRadius: BorderRadius.circular(8), border: Border.all(color: C.gold)),
-        child: Text(sel && v == '' ? '✓ $t' : t, style: TextStyle(color: sel ? Colors.white : C.text, fontSize: 11)),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? C.gold : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: C.gold),
+        ),
+        child: Text(
+          selected && value.isEmpty ? '✓ $title' : title,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            color: selected ? Colors.white : C.text,
+            fontSize: 11,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _count(String s, int n) => Expanded(child: Box(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        StatusChip(statusLabel[s]!, statusColor(s)),
-        Text('$n', style: const TextStyle(color: C.text, fontSize: 22, fontWeight: FontWeight.w800)),
-      ])));
+  Widget _count(String status, int count) {
+    return Expanded(
+      child: Box(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: statusColor(status),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    statusLabel[status] ?? status,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: C.text,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$count',
+              style: const TextStyle(
+                color: C.text,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  void _detail(Map r) => showModalBottomSheet(
-        context: context, backgroundColor: C.cream,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (_) => Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 10)),
-          const SizedBox(height: 6),
-          Text(r['title'], style: const TextStyle(color: C.text, fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
-          const SizedBox(height: 10),
-          Text(r['description'] == null || r['description'] == '' ? 'Tidak ada deskripsi.' : r['description'], style: const TextStyle(color: C.text, fontSize: 12)),
-          const SizedBox(height: 10),
-          Row(children: [const Icon(Icons.location_on, size: 13, color: C.gold), Text(' ${r['location'] ?? '-'}', style: const TextStyle(color: C.grey, fontSize: 11))]),
-          const SizedBox(height: 4),
-          Text('Dikirim: ${r['created_at']}', style: const TextStyle(color: C.grey, fontSize: 10)),
-          const SizedBox(height: 10),
-        ])),
-      );
+  void _detail(Map report) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: C.cream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: 20 +
+                  MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  report['code']?.toString() ?? '',
+                  style: const TextStyle(
+                    color: C.gold,
+                    fontSize: 10,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  report['title']?.toString() ?? '-',
+                  style: const TextStyle(
+                    color: C.text,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                StatusChip(
+                  statusLabel[report['status']] ??
+                      report['status']?.toString() ??
+                      '-',
+                  statusColor(report['status']),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  report['description'] == null ||
+                          report['description'].toString().isEmpty
+                      ? 'Tidak ada deskripsi.'
+                      : report['description'].toString(),
+                  style: const TextStyle(
+                    color: C.text,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      size: 13,
+                      color: C.gold,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        report['location']?.toString() ?? '-',
+                        style: const TextStyle(
+                          color: C.grey,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Dikirim: ${report['created_at'] ?? '-'}',
+                  style: const TextStyle(
+                    color: C.grey,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-  Widget _listCard(Map r) => Container(margin: const EdgeInsets.only(bottom: 10), child: Box(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Flexible(child: Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 9), overflow: TextOverflow.ellipsis)),
-          const SizedBox(width: 8), StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
-          const Spacer(), GestureDetector(onTap: () => _detail(r), child: const DetailBtn('Lihat detail')),
-        ]),
-        const SizedBox(height: 6),
-        Text(r['title'], style: const TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 13)),
-        const SizedBox(height: 6),
-        Row(children: [const Icon(Icons.location_on, size: 11, color: C.gold), Flexible(child: Text(r['location'] ?? '', style: const TextStyle(color: C.grey, fontSize: 9)))]),
-      ])));
+  Widget _listCard(Map report) {
+    final String code = report['code']?.toString() ?? '';
+    final String status = report['status']?.toString() ?? '';
+    final String title = report['title']?.toString() ?? '-';
+    final String location =
+        report['location']?.toString() ?? '-';
 
-  Widget _gridCard(Map r) => GestureDetector(
-        onTap: () => _detail(r),
-        child: Box(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(r['code'] ?? '', style: const TextStyle(color: C.gold, fontSize: 9), overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 6),
-          StatusChip(statusLabel[r['status']]!, statusColor(r['status'])),
-          const SizedBox(height: 8),
-          Text(r['title'], maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 12)),
-          const SizedBox(height: 8),
-          Row(children: [const Icon(Icons.location_on, size: 11, color: C.gold), Flexible(child: Text(r['location'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: C.grey, fontSize: 9)))]),
-          const SizedBox(height: 10),
-          const DetailBtn('Lihat detail'),
-        ])),
-      );
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Box(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 75,
+                        child: Text(
+                          code,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: C.gold,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                      StatusChip(
+                        statusLabel[status] ?? status,
+                        statusColor(status),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => _detail(report),
+                  child: const DetailBtn('Lihat detail'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              softWrap: true,
+              style: const TextStyle(
+                color: C.text,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  size: 12,
+                  color: C.gold,
+                ),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    location,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: C.grey,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _gridCard(Map report) {
+    final String code = report['code']?.toString() ?? '';
+    final String status = report['status']?.toString() ?? '';
+    final String title = report['title']?.toString() ?? '-';
+    final String location =
+        report['location']?.toString() ?? '-';
+
+    return GestureDetector(
+      onTap: () => _detail(report),
+      child: Box(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: C.gold,
+                fontSize: 9,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: StatusChip(
+                statusLabel[status] ?? status,
+                statusColor(status),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: C.text,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  size: 11,
+                  color: C.gold,
+                ),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Text(
+                    location,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: C.grey,
+                      fontSize: 9,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: DetailBtn('Lihat detail'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppHeader('LAPORAN SAYA', actions: [
-          GestureDetector(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateReportScreen())), child: const RoundIcon(Icons.add)),
-        ]),
-        body: AsyncView(
-          key: ValueKey(filter),
-          load: () => Api.get('/reports${filter.isEmpty ? '' : '?status=$filter'}'),
-          builder: (c, d) {
-            final cn = d['counts'];
-            final list = d['reports'] as List;
-            return ListView(padding: const EdgeInsets.all(16), children: [
-              SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [for (final t in _tabs) _tab(t.$1, t.$2)])),
-              const SizedBox(height: 14),
-              Row(children: [_count('belum', cn['belum']), const SizedBox(width: 8), _count('sedang', cn['sedang']), const SizedBox(width: 8), _count('selesai', cn['selesai'])]),
-              const SizedBox(height: 16),
-              SectionHeader('LAPORAN TERBARU', grid: grid, onChanged: (v) => setState(() => grid = v)),
-              const SizedBox(height: 8),
-              if (list.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('Belum ada laporan', style: TextStyle(color: C.grey)))),
-              if (grid)
-                RGrid(cols: 2, wideCols: 3, gap: 10, children: [for (final r in list) _gridCard(r)])
-              else
-                for (final r in list) _listCard(r),
-            ]);
-          },
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppHeader(
+        'LAPORAN SAYA',
+        actions: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CreateReportScreen(),
+                ),
+              );
+            },
+            child: const RoundIcon(Icons.add),
+          ),
+        ],
+      ),
+      body: AsyncView(
+        key: ValueKey(filter),
+        load: () => Api.get(
+          '/reports${filter.isEmpty ? '' : '?status=$filter'}',
         ),
-      );
+        builder: (context, data) {
+          final counts =
+              data['counts'] as Map? ?? <String, dynamic>{};
+          final List reports = data['reports'] as List? ?? [];
+
+          int getCount(String key) {
+            final value = counts[key];
+            if (value is int) return value;
+            if (value is num) return value.toInt();
+            return int.tryParse(value?.toString() ?? '') ?? 0;
+          }
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final double width = constraints.maxWidth;
+              final double horizontalPadding =
+                  width < 360 ? 10 : 16;
+
+              return ListView(
+                padding: EdgeInsets.all(horizontalPadding),
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final tab in _tabs)
+                          _tab(tab.$1, tab.$2),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _count('belum', getCount('belum')),
+                      const SizedBox(width: 8),
+                      _count('sedang', getCount('sedang')),
+                      const SizedBox(width: 8),
+                      _count('selesai', getCount('selesai')),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SectionHeader(
+                    'LAPORAN TERBARU',
+                    grid: grid,
+                    onChanged: (value) {
+                      setState(() {
+                        grid = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  if (reports.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(30),
+                      child: Center(
+                        child: Text(
+                          'Belum ada laporan',
+                          style: TextStyle(color: C.grey),
+                        ),
+                      ),
+                    ),
+                  if (grid && reports.isNotEmpty)
+                    RGrid(
+                      cols: 2,
+                      wideCols: 3,
+                      gap: 10,
+                      children: [
+                        for (final report in reports)
+                          _gridCard(report as Map),
+                      ],
+                    ),
+                  if (!grid)
+                    for (final report in reports)
+                      _listCard(report as Map),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
